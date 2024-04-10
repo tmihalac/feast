@@ -72,13 +72,13 @@ jobs:
           java-version: '11'
           java-package: jdk
           architecture: x64
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-it-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-it-maven-
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-ut-maven-${{ hashFiles('**/pom.xml') }}
@@ -117,7 +117,7 @@ jobs:
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ${{ steps.pip-cache.outputs.dir }}
@@ -133,7 +133,7 @@ jobs:
         run: pip install pip-tools
       - name: Install Python dependencies
         run: make install-python-ci-dependencies
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-it-maven-${{ hashFiles('**/pom.xml') }}
