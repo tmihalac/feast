@@ -7,9 +7,8 @@ from typing import List, Optional
 
 import pandas as pd
 from dateutil import parser
-from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.logger import logger
-from fastapi.params import Depends
 from google.protobuf.json_format import MessageToDict
 from pydantic import BaseModel
 
@@ -20,6 +19,13 @@ from feast.data_source import PushMode
 from feast.errors import FeatureViewNotFoundException, PushSourceNotFoundException
 from feast.permissions.action import WRITE, AuthzedAction
 from feast.permissions.security_manager import assert_permissions
+from feast.permissions.server.rest import inject_user_details_to_security_manager
+from feast.permissions.server.utils import (
+    ServerType,
+    auth_manager_type_from_env,
+    init_auth_manager,
+    init_security_manager,
+)
 
 
 # TODO: deprecate this in favor of push features
@@ -84,7 +90,11 @@ def get_app(
     async def get_body(request: Request):
         return await request.body()
 
-    @app.post("/get-online-features")
+    # TODO RBAC: complete the dependencies for the other endpoints
+    @app.post(
+        "/get-online-features",
+        dependencies=[Depends(inject_user_details_to_security_manager)],
+    )
     def get_online_features(body=Depends(get_body)):
         try:
             body = json.loads(body)
@@ -297,6 +307,14 @@ def start_server(
     keep_alive_timeout: int,
     registry_ttl_sec: int,
 ):
+    # TODO RBAC remove and use the auth section of the feature store config instead
+    auth_manager_type = auth_manager_type_from_env()
+    init_security_manager(auth_manager_type)
+    init_auth_manager(
+        auth_manager_type=auth_manager_type,
+        server_type=ServerType.REST,
+    )
+
     if sys.platform != "win32":
         FeastServeApplication(
             store=store,
