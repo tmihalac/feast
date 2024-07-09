@@ -144,7 +144,7 @@ def get_app(
             # Raise HTTPException to return the error message to the client
             raise HTTPException(status_code=500, detail=str(e))
 
-    @app.post("/push")
+    @app.post("/push", dependencies=[Depends(inject_user_details)])
     def push(body=Depends(get_body)):
         try:
             request = PushFeaturesRequest(**json.loads(body))
@@ -201,7 +201,7 @@ def get_app(
             # Raise HTTPException to return the error message to the client
             raise HTTPException(status_code=500, detail=str(e))
 
-    @app.post("/write-to-online-store")
+    @app.post("/write-to-online-store", dependencies=[Depends(inject_user_details)])
     def write_to_online_store(body=Depends(get_body)):
         try:
             request = WriteToFeatureStoreRequest(**json.loads(body))
@@ -235,7 +235,7 @@ def get_app(
     def health():
         return Response(status_code=status.HTTP_200_OK)
 
-    @app.post("/materialize")
+    @app.post("/materialize", dependencies=[Depends(inject_user_details)])
     def materialize(body=Depends(get_body)):
         try:
             request = MaterializeRequest(**json.loads(body))
@@ -254,7 +254,7 @@ def get_app(
             # Raise HTTPException to return the error message to the client
             raise HTTPException(status_code=500, detail=str(e))
 
-    @app.post("/materialize-incremental")
+    @app.post("/materialize-incremental", dependencies=[Depends(inject_user_details)])
     def materialize_incremental(body=Depends(get_body)):
         try:
             request = MaterializeIncrementalRequest(**json.loads(body))
