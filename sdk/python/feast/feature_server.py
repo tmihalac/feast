@@ -22,7 +22,6 @@ from feast.permissions.security_manager import assert_permissions
 from feast.permissions.server.rest import inject_user_details
 from feast.permissions.server.utils import (
     ServerType,
-    auth_manager_type_from_env,
     init_auth_manager,
     init_security_manager,
 )
@@ -307,8 +306,7 @@ def start_server(
     keep_alive_timeout: int,
     registry_ttl_sec: int,
 ):
-    # TODO RBAC remove and use the auth section of the feature store config instead
-    auth_manager_type = auth_manager_type_from_env()
+    auth_manager_type = store.config.auth_config.type
     init_security_manager(auth_manager_type=auth_manager_type, fs=store)
     init_auth_manager(
         auth_manager_type=auth_manager_type,
