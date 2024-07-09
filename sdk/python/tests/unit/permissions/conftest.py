@@ -3,14 +3,15 @@ from unittest.mock import Mock
 import pytest
 
 from feast import FeatureView
+from feast.infra.registry.base_registry import BaseRegistry
 from feast.permissions.decorator import require_permissions
 from feast.permissions.permission import AuthzedAction, Permission
 from feast.permissions.policy import RoleBasedPolicy
-from feast.permissions.role_manager import RoleManager
 from feast.permissions.security_manager import (
     SecurityManager,
     set_security_manager,
 )
+from feast.permissions.user import User
 
 
 class SecuredFeatureView(FeatureView):
@@ -42,12 +43,13 @@ def feature_views() -> list[FeatureView]:
 
 
 @pytest.fixture
-def role_manager() -> RoleManager:
-    rm = RoleManager()
-    rm.add_roles_for_user("r", ["reader"])
-    rm.add_roles_for_user("w", ["writer"])
-    rm.add_roles_for_user("rw", ["reader", "writer"])
-    return rm
+def users() -> list[User]:
+    users = []
+    users.append(User("r", ["reader"]))
+    users.append(User("w", ["writer"]))
+    users.append(User("rw", ["reader", "writer"]))
+    users.append(User("admin", ["reader", "writer", "admin"]))
+    return dict([(u.username, u) for u in users])
 
 
 @pytest.fixture
@@ -82,11 +84,8 @@ def security_manager() -> SecurityManager:
         )
     )
 
-    rm = RoleManager()
-    rm.add_roles_for_user("r", ["reader"])
-    rm.add_roles_for_user("w", ["writer"])
-    rm.add_roles_for_user("rw", ["reader", "writer"])
-    rm.add_roles_for_user("admin", ["reader", "writer", "admin"])
-    sm = SecurityManager(role_manager=rm, permissions=permissions)
+    registry = Mock(spec=BaseRegistry)
+    registry.list_permissions = Mock(return_value=permissions)
+    sm = SecurityManager(project="any", registry=registry)
     set_security_manager(sm)
     return sm
