@@ -16,13 +16,13 @@ from feast.permissions.action import AuthzedAction
 from feast.permissions.security_manager import assert_permissions
 from feast.permissions.server.arrow import (
     arrowflight_middleware,
-    inject_user_details,
+    inject_user_details_decorator,
 )
 from feast.permissions.server.utils import (
     ServerType,
-    auth_manager_type_from_env,
     init_auth_manager,
     init_security_manager,
+    str_to_auth_manager_type,
 )
 from feast.saved_dataset import SavedDatasetStorage
 
@@ -33,7 +33,11 @@ logger.setLevel(logging.INFO)
 class OfflineServer(fl.FlightServerBase):
     def __init__(self, store: FeatureStore, location: str, **kwargs):
         super(OfflineServer, self).__init__(
-            location, middleware=arrowflight_middleware(), **kwargs
+            location,
+            middleware=arrowflight_middleware(
+                str_to_auth_manager_type(store.config.auth_config.type)
+            ),
+            **kwargs,
         )
         self._location = location
         # A dictionary of configured flights, e.g. API calls received and not yet served
@@ -56,6 +60,7 @@ class OfflineServer(fl.FlightServerBase):
 
         return fl.FlightInfo(schema, descriptor, endpoints, -1, -1)
 
+    @inject_user_details_decorator
     def get_flight_info(
         self, context: fl.ServerCallContext, descriptor: fl.FlightDescriptor
     ):
@@ -64,6 +69,7 @@ class OfflineServer(fl.FlightServerBase):
             return self._make_flight_info(key, descriptor)
         raise KeyError("Flight not found.")
 
+    @inject_user_details_decorator
     def list_flights(self, context: fl.ServerCallContext, criteria: bytes):
         for key, table in self.flights.items():
             if key[1] is not None:
@@ -75,6 +81,7 @@ class OfflineServer(fl.FlightServerBase):
 
     # Expects to receive request parameters and stores them in the flights dictionary
     # Indexed by the unique command
+    @inject_user_details_decorator
     def do_put(
         self,
         context: fl.ServerCallContext,
@@ -171,10 +178,8 @@ class OfflineServer(fl.FlightServerBase):
 
     # Extracts the API parameters from the flights dictionary, delegates the execution to the FeatureStore instance
     # and returns the stream of data
+    @inject_user_details_decorator
     def do_get(self, context: fl.ServerCallContext, ticket: fl.Ticket):
-        # TODO RBAC: add the same to all the authorized endpoints
-        inject_user_details(context)
-
         key = ast.literal_eval(ticket.ticket.decode())
         if key not in self.flights:
             logger.error(f"Unknown key {key}")
@@ -443,18 +448,21 @@ def remove_dummies(fv: FeatureView) -> FeatureView:
     return fv
 
 
-def start_server(
-    store: FeatureStore,
-    host: str,
-    port: int,
-):
-    # TODO RBAC remove and use the auth section of the feature store config instead
-    auth_manager_type = auth_manager_type_from_env()
+def _init_auth_manager(store: FeatureStore):
+    auth_manager_type = str_to_auth_manager_type(store.config.auth_config.type)
     init_security_manager(auth_manager_type=auth_manager_type, fs=store)
     init_auth_manager(
         auth_manager_type=auth_manager_type,
         server_type=ServerType.ARROW,
     )
+
+
+def start_server(
+    store: FeatureStore,
+    host: str,
+    port: int,
+):
+    _init_auth_manager(store)
 
     location = "grpc+tcp://{}:{}".format(host, port)
     server = OfflineServer(store, location)

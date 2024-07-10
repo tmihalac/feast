@@ -22,9 +22,9 @@ from feast.permissions.security_manager import assert_permissions
 from feast.permissions.server.rest import inject_user_details
 from feast.permissions.server.utils import (
     ServerType,
-    auth_manager_type_from_env,
     init_auth_manager,
     init_security_manager,
+    str_to_auth_manager_type,
 )
 
 
@@ -145,7 +145,7 @@ def get_app(
             # Raise HTTPException to return the error message to the client
             raise HTTPException(status_code=500, detail=str(e))
 
-    @app.post("/push")
+    @app.post("/push", dependencies=[Depends(inject_user_details)])
     def push(body=Depends(get_body)):
         try:
             request = PushFeaturesRequest(**json.loads(body))
@@ -202,7 +202,7 @@ def get_app(
             # Raise HTTPException to return the error message to the client
             raise HTTPException(status_code=500, detail=str(e))
 
-    @app.post("/write-to-online-store")
+    @app.post("/write-to-online-store", dependencies=[Depends(inject_user_details)])
     def write_to_online_store(body=Depends(get_body)):
         try:
             request = WriteToFeatureStoreRequest(**json.loads(body))
@@ -236,7 +236,7 @@ def get_app(
     def health():
         return Response(status_code=status.HTTP_200_OK)
 
-    @app.post("/materialize")
+    @app.post("/materialize", dependencies=[Depends(inject_user_details)])
     def materialize(body=Depends(get_body)):
         try:
             request = MaterializeRequest(**json.loads(body))
@@ -255,7 +255,7 @@ def get_app(
             # Raise HTTPException to return the error message to the client
             raise HTTPException(status_code=500, detail=str(e))
 
-    @app.post("/materialize-incremental")
+    @app.post("/materialize-incremental", dependencies=[Depends(inject_user_details)])
     def materialize_incremental(body=Depends(get_body)):
         try:
             request = MaterializeIncrementalRequest(**json.loads(body))
@@ -307,8 +307,7 @@ def start_server(
     keep_alive_timeout: int,
     registry_ttl_sec: int,
 ):
-    # TODO RBAC remove and use the auth section of the feature store config instead
-    auth_manager_type = auth_manager_type_from_env()
+    auth_manager_type = str_to_auth_manager_type(store.config.auth_config.type)
     init_security_manager(auth_manager_type=auth_manager_type, fs=store)
     init_auth_manager(
         auth_manager_type=auth_manager_type,

@@ -3,6 +3,7 @@ A module with utility functions and classes to support authorizing the Arrow Fli
 """
 
 import asyncio
+import functools
 import logging
 from typing import Optional, cast
 
@@ -15,7 +16,6 @@ from feast.permissions.auth.auth_manager import (
 from feast.permissions.security_manager import get_security_manager
 from feast.permissions.server.utils import (
     AuthManagerType,
-    auth_manager_type_from_env,
 )
 from feast.permissions.user import User
 
@@ -23,7 +23,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def arrowflight_middleware() -> Optional[dict[str, fl.ServerMiddlewareFactory]]:
+def arrowflight_middleware(
+    auth_manager_type: AuthManagerType,
+) -> Optional[dict[str, fl.ServerMiddlewareFactory]]:
     """
     A dictionary with the configured middlewares to support extracting the user details when the authorization manager is defined.
     The authorization middleware key is `auth`.
@@ -31,8 +33,7 @@ def arrowflight_middleware() -> Optional[dict[str, fl.ServerMiddlewareFactory]]:
     Returns:
         dict[str, fl.ServerMiddlewareFactory]: Optional dictionary of middlewares. If the authorization type is set to `NONE`, it returns `None`.
     """
-    # TODO RBAC remove and use the auth section of the feature store config instead
-    auth_manager_type = auth_manager_type_from_env()
+
     if auth_manager_type == AuthManagerType.NONE:
         return None
 
@@ -99,3 +100,12 @@ def inject_user_details(context: ServerCallContext):
         print(f"extracted user: {current_user}")
 
         sm.set_current_user(current_user)
+
+
+def inject_user_details_decorator(func):
+    @functools.wraps(func)
+    def wrapper(self, context, *args, **kwargs):
+        inject_user_details(context)
+        return func(self, context, *args, **kwargs)
+
+    return wrapper
