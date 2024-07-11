@@ -231,7 +231,9 @@ def mock_remote_registry():
     proxied_registry = Registry("project", registry_config, None)
 
     registry = RemoteRegistry(
-        registry_config=RemoteRegistryConfig(path=""), project=None, repo_path=None
+        registry_config=RemoteRegistryConfig(path=""),
+        project=None,
+        repo_path=None,
     )
     mock_channel = GrpcMockChannel(
         RegistryServer_pb2.DESCRIPTOR.services_by_name["RegistryServer"],
