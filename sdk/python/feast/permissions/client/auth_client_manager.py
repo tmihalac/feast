@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Tuple
 
+import pyarrow.flight as fl
+
 from feast.permissions.auth.auth_type import AuthType
 from feast.permissions.auth_model import (
     AuthConfig,
@@ -44,3 +46,10 @@ def create_grpc_auth_header(auth_config: AuthConfig) -> Tuple[Tuple[str, str]]:
     token = auth_client_manager.get_token()
 
     return (("authorization", "Bearer " + token),)
+
+
+def create_flight_call_options(auth_config: AuthConfig) -> fl.FlightCallOptions:
+    if auth_config.type != AuthType.NONE.value:
+        headers = create_grpc_auth_header(auth_config)
+        return fl.FlightCallOptions(headers=headers)
+    return fl.FlightCallOptions()
