@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 
-import pyarrow.flight as fl
-
 from feast.permissions.auth.auth_type import AuthType
 from feast.permissions.auth_model import (
     AuthConfig,
@@ -38,4 +36,3 @@ def get_auth_client_manager(auth_config: AuthConfig) -> AuthenticationClientMana
         raise RuntimeError(
             f"No Auth client manager implemented for the auth type:${auth_config.type}"
         )
-
