@@ -66,6 +66,7 @@ REQUIRED = [
     "uvicorn[standard]>=0.14.0,<1",
     "gunicorn; platform_system != 'Windows'",
     "dask[dataframe]>=2024.2.1",
+    "bigtree>=0.19.2",
 ]
 
 GCP_REQUIRED = [
