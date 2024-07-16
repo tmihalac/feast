@@ -18,21 +18,14 @@ import re
 import shutil
 import subprocess
 import sys
-from distutils.cmd import Command
+
 from pathlib import Path
 
-from setuptools import find_packages
-
-try:
-    from setuptools import setup
-    from setuptools.command.build_ext import build_ext as _build_ext
-    from setuptools.command.build_py import build_py
-    from setuptools.command.develop import develop
-    from setuptools.command.install import install
-
-except ImportError:
-    from distutils.command.build_py import build_py
-    from distutils.core import setup
+from setuptools import find_packages, setup, Command
+from setuptools.command.build_ext import build_ext as _build_ext
+from setuptools.command.build_py import build_py
+from setuptools.command.develop import develop
+from setuptools.command.install import install
 
 NAME = "feast"
 DESCRIPTION = "Python SDK for Feast"
@@ -72,9 +65,9 @@ REQUIRED = [
 GCP_REQUIRED = [
     "google-api-core>=1.23.0,<3",
     "googleapis-common-protos>=1.52.0,<2",
-    "google-cloud-bigquery[pandas]>=2,<3.13.0",
+    "google-cloud-bigquery[pandas]>=2,<4",
     "google-cloud-bigquery-storage >= 2.0.0,<3",
-    "google-cloud-datastore>=2.1.0,<3",
+    "google-cloud-datastore>=2.16.0,<3",
     "google-cloud-storage>=1.34.0,<3",
     "google-cloud-bigtable>=2.11.0,<3",
     "fsspec<=2024.1.0",
