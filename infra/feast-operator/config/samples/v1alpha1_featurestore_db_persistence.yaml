@@ -12,7 +12,6 @@ spec:
           type: postgres
           secretRef:
             name: postgres-secret
-          secretKeyName: postgres-secret-parameters   # optional
     registry:
       local:
         persistence:
@@ -20,7 +19,7 @@ spec:
             type: sql
             secretRef:
               name: postgres-secret
-            secretKeyName: postgres-secret-parameters   # optional
+            secretKeyName: postgres-secret-parameters   # optional, will use store.type by default as the SecretKeyName if none is specified, in this case that's "sql"
 ---
 apiVersion: v1
 kind: Secret
